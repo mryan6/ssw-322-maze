@@ -48,17 +48,19 @@ public class MazeGameCreator
 	/**
 	 * Creates a small maze.
 	 */
+	public static ArrayList<String> lines = new ArrayList<String>();
+	public static MazeGameCreator mgc;
 	public Maze createMaze()
 	{
 		
 		Maze maze = new Maze();
 		//System.out.println("The maze does not have any rooms yet!");
-		Room firstRoom = makeRoom(0);
-		Room secondRoom = makeRoom(1);
-		Room thirdRoom = makeRoom(2);
-		Wall wall = makeWall();
-		Door firstDoor = makeDoor(firstRoom, secondRoom);
-		Door secondDoor = makeDoor(firstRoom, thirdRoom);
+		Room firstRoom = mgc.makeRoom(0);
+		Room secondRoom = mgc.makeRoom(1);
+		Room thirdRoom = mgc.makeRoom(2);
+		Wall wall = mgc.makeWall();
+		Door firstDoor = mgc.makeDoor(firstRoom, secondRoom);
+		Door secondDoor = mgc.makeDoor(firstRoom, thirdRoom);
 		firstRoom.setSide(Direction.East, secondDoor);
 		firstRoom.setSide(Direction.West, wall);
 		firstRoom.setSide(Direction.South, wall);
@@ -80,14 +82,14 @@ public class MazeGameCreator
 		
 
 	}
-	public Maze makeMaze(final String path, MazeGameCreator mgc) {
+	public Maze makeMaze(final String path) {
 		Maze maze = new Maze();
-		ArrayList<String> lines = getLines(path);
-		ArrayList<Room> rooms = getRooms(lines, mgc);
-		ArrayList<Door> doors = getDoors(lines, rooms, mgc);
+		getLines(path);
+		ArrayList<Room> rooms = createRooms();
+		ArrayList<Door> doors = createDoors(rooms);
 		for (int i = 0; i < lines.size(); i++) {
 			String currentLine = lines.get(i);
-			constructRoom(currentLine, rooms, doors, mgc);
+			constructRoom(currentLine, rooms, doors);
 		}
 		for (int i = 0; i < rooms.size(); i++) {
 			maze.addRoom(rooms.get(i));
@@ -113,7 +115,6 @@ public class MazeGameCreator
 	 */
 	public static ArrayList<String> getLines(String path) {
 		File file = new File(path);
-		ArrayList<String> lines = new ArrayList<String>();
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			String line; 
@@ -144,7 +145,7 @@ public class MazeGameCreator
 	 * We will also use Index 1 to ensure that we create a room with the intended room number
 	 * The other indexes will not be used in this method
 	 */
-	public static ArrayList<Room> getRooms(ArrayList<String> lines, MazeGameCreator mgc) {
+	public static ArrayList<Room> createRooms() {
 		ArrayList<Room> rooms = new ArrayList<Room>();
 		for (int i = 0; i < lines.size(); i++) {
 			String currentLine = lines.get(i);
@@ -170,7 +171,7 @@ public class MazeGameCreator
 	 * Index 4 - Door Status (ie. open or closed)
 	 * For this method, we will use all of the indexes to correctly construct our list of doors
 	 */
-	public static ArrayList<Door> getDoors(ArrayList<String> lines, ArrayList<Room> rooms, MazeGameCreator mgc) {
+	public static ArrayList<Door> createDoors(ArrayList<Room> rooms) {
 		ArrayList<Door> doors = new ArrayList<Door>();
 		for (int i = 0; i < lines.size(); i++) {
 			String currentLine = lines.get(i);
@@ -197,7 +198,7 @@ public class MazeGameCreator
 	 * We also need the list of doors so that we can join rooms together 
 	 */
 	public static void constructSide(Direction dir, Room room, ArrayList<Room> rooms, 
-			ArrayList<Door> doors, String roomObject, MazeGameCreator mgc) {
+			ArrayList<Door> doors, String roomObject) {
 		if (roomObject.equals("wall")) {
 			Wall wall = mgc.makeWall();
 			room.setSide(dir, wall);
@@ -226,15 +227,15 @@ public class MazeGameCreator
 	 * We need to pass in the list of rooms so that we can determine which room to modify
 	 * We need to pass in the list of doors so that we can add doors if necessary 
 	 */
-	public static void constructRoom(String line, ArrayList<Room> rooms, ArrayList<Door> doors, MazeGameCreator mgc) {
+	public static void constructRoom(String line, ArrayList<Room> rooms, ArrayList<Door> doors) {
 		String[] roomInformation = line.split(" ");
 		if (roomInformation[0].equals("room")) {
 			int roomNumber = Integer.parseInt(roomInformation[1]);
 			Room room = rooms.get(roomNumber);
-			constructSide(Direction.North, room, rooms, doors, roomInformation[2], mgc);
-			constructSide(Direction.South, room, rooms, doors, roomInformation[3], mgc);
-			constructSide(Direction.East, room, rooms, doors, roomInformation[4], mgc);
-			constructSide(Direction.West, room, rooms, doors, roomInformation[5], mgc);
+			for (Direction side: Direction.values()) {
+				int index = side.ordinal();
+				constructSide(side, room, rooms, doors, roomInformation[index+2]);
+			}
 		}
 	}
 	
@@ -251,7 +252,7 @@ public class MazeGameCreator
 	public static void main(String[] args)
 	{
 		Maze maze;
-		MazeGameCreator mgc;
+		//MazeGameCreator mgc;
 		if (args.length == 0) {
 			mgc = new MazeGameCreator();
 			maze = mgc.createMaze();
@@ -266,24 +267,27 @@ public class MazeGameCreator
 				maze = mgc.createMaze();
 			} else {
 				mgc = new MazeGameCreator();
-				maze = mgc.makeMaze(args[0], mgc);
+				maze = mgc.makeMaze(args[0]);
 			}
 		} else {
 			if (args[0].toLowerCase().equals("red")) {
+				//"Color first, File path second"
 				mgc = new RedMazeGameCreator();
-				maze = mgc.makeMaze(args[1], mgc);
+				maze = mgc.makeMaze(args[1]);
 			} else if (args[0].toLowerCase().equals("blue")) {
+				//"Color first, File path second"
 				mgc = new BlueMazeGameCreator();
-				maze = mgc.makeMaze(args[1], mgc);
+				maze = mgc.makeMaze(args[1]);
 			} else if (args[1].toLowerCase().equals("red")){
-				System.out.println("File path first, color second");
+				//"File path first, color second"
 				mgc = new RedMazeGameCreator();
-				maze = mgc.makeMaze(args[0], mgc);
+				maze = mgc.makeMaze(args[0]);
 			} else if (args[1].toLowerCase().equals("blue")) {
-				System.out.println("File path first, color second");
+				//"File path first, color second"
 				mgc = new BlueMazeGameCreator();
-				maze = mgc.makeMaze(args[0], mgc);
+				maze = mgc.makeMaze(args[0]);
 			} else {
+				//Should only reach this point if the arguments do not contain a file path or color
 				mgc = new MazeGameCreator();
 				System.out.println("BAD ARGUMENTS FOUND!! Valid arguments are a color (red or blue) and a file path.");
 				System.out.println("Building a default maze in its place");
